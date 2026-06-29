@@ -58,6 +58,37 @@ local function add_hit(x, y, w, h, kind, payload)
 	_hit[#_hit + 1] = { x = x, y = y, w = w, h = h, kind = kind, payload = payload }
 end
 
+-- Scrollbar grab regions (rebuilt each frame) and the active drag target.
+local _scrollbars = {}
+local _drag = nil
+
+local function set_scroll(kind, v)
+	if kind == "file" then _file_scroll = v
+	elseif kind == "rule" then _rule_scroll = v
+	elseif kind == "icon" then _icon_scroll = v end
+end
+
+-- Map the cursor's y to a scroll offset for the dragged scrollbar.
+local function update_drag(my)
+	local sb = _drag
+	if not sb then return end
+	local th    = math.max(20 * ui.scale(), sb.h * sb.visible / sb.total)
+	local denom = sb.h - th
+	local maxs  = math.max(0, sb.total - sb.visible)
+	local frac  = denom > 0 and (my - sb.y - th / 2) / denom or 0
+	local v     = math.floor(frac * maxs + 0.5)
+	if v < 0 then v = 0 elseif v > maxs then v = maxs end
+	set_scroll(sb.kind, v)
+end
+
+-- Draw a scrollbar and, when scrollable, register a widened grab region.
+local function draw_scrollbar(ui_renderer, x, y, h, total, visible, scroll, kind)
+	scrollbar(ui_renderer, x, y, h, total, visible, scroll)
+	if total > visible then
+		_scrollbars[#_scrollbars + 1] = { kind = kind, x = x, y = y, h = h, total = total, visible = visible, hx = x - 6, hw = 16 }
+	end
+end
+
 local function draw_text(ui_renderer, text, x, y, color, size, w)
 	ui.text(ui_renderer, text, x, y, color, size, w or PANEL_W)
 end
@@ -80,6 +111,7 @@ end
 local function draw(ui_renderer, mx, my)
 	refresh_scale()
 	_hit = {}
+	_scrollbars = {}
 
 	local px, py  = panel_origin()
 	local state   = vo_browser.get_state()
@@ -187,7 +219,7 @@ local function draw(ui_renderer, mx, my)
 			UIRenderer.script_draw_bitmap(ui_renderer, ic.material, Vector3(ix + 4, iy + 4, LAYER + 1), Vector2(cell - 8, cell - 8), C.item)
 			add_hit(ix, iy, cell, cell, "seticon", ic.id)
 		end
-		scrollbar(ui_renderer, cxw + icon_w + 5, top, col_h, total_rows, vis_rows, _icon_scroll)
+		draw_scrollbar(ui_renderer, cxw + icon_w + 5, top, col_h, total_rows, vis_rows, _icon_scroll, "icon")
 	elseif _open_rule then
 		local nv = vo_browser.variant_count(state.file, _open_rule)
 		local entries = { { label = "Default (cycle)", line = nil } }
@@ -207,8 +239,8 @@ local function draw(ui_renderer, mx, my)
 		end
 	end
 
-	scrollbar(ui_renderer, fx + file_w + 5, top, col_h, #files, rows - 1, _file_scroll)
-	scrollbar(ui_renderer, rx + rule_w + 5, top, col_h, _show_favs and #favorites.all() or #state.rules, rows, _rule_scroll)
+	draw_scrollbar(ui_renderer, fx + file_w + 5, top, col_h, #files, rows - 1, _file_scroll, "file")
+	draw_scrollbar(ui_renderer, rx + rule_w + 5, top, col_h, _show_favs and #favorites.all() or #state.rules, rows, _rule_scroll, "rule")
 
 	draw_text(ui_renderer,
 		"LMB line: show variants   LMB variant: play   RMB: favourite   Favourites: assign icon   Wheel: scroll",
@@ -311,6 +343,12 @@ end
 local function handle_input(mx, my, svc)
 	if not svc then return end
 
+	-- Scrollbar dragging takes priority while the button is held.
+	if _drag then
+		if svc:get("left_hold") then update_drag(my); return end
+		_drag = nil
+	end
+
 	local scroll = svc:get("scroll_axis")
 	if scroll and scroll[2] and scroll[2] ~= 0 then
 		local px = panel_origin()
@@ -325,6 +363,16 @@ local function handle_input(mx, my, svc)
 
 	local left  = svc:get("left_pressed")
 	local right = svc:get("right_pressed")
+
+	-- Begin dragging if the press landed on a scrollbar grab region.
+	if left then
+		for _, sb in ipairs(_scrollbars) do
+			if point_in(mx, my, sb.hx, sb.y, sb.hw, sb.h) then
+				_drag = sb; update_drag(my); return
+			end
+		end
+	end
+
 	if not left and not right then return end
 	for _, h in ipairs(_hit) do
 		if point_in(mx, my, h.x, h.y, h.w, h.h) then
