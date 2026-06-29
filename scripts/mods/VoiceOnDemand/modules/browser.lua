@@ -129,10 +129,10 @@ local function draw(ui_renderer, mx, my)
 	local col_h   = PANEL_H - HEADER_H - FOOTER_H - 30 * ui.scale()
 
 	draw_rect(ui_renderer, px, py, PANEL_W, PANEL_H, C.panel)
-	draw_text(ui_renderer, string.format("VOICE ON DEMAND   %d files", #files), fx, py + 14, C.header, 28, PANEL_W)
-	draw_text(ui_renderer, "VOICE FILES", fx + 10, hdr, C.dim, 16, file_w)
-	draw_text(ui_renderer, "VOICE LINES", rx + 10, hdr, C.dim, 16, rule_w)
-	draw_text(ui_renderer, _show_favs and "ICONS" or "VARIANTS", cxw + 10, hdr, C.dim, 16, icon_w)
+	draw_text(ui_renderer, mod:localize("browser_title", #files), fx, py + 14, C.header, 28, PANEL_W)
+	draw_text(ui_renderer, mod:localize("col_voice_files"), fx + 10, hdr, C.dim, 16, file_w)
+	draw_text(ui_renderer, mod:localize("col_voice_lines"), rx + 10, hdr, C.dim, 16, rule_w)
+	draw_text(ui_renderer, _show_favs and mod:localize("col_icons") or mod:localize("col_variants"), cxw + 10, hdr, C.dim, 16, icon_w)
 	draw_rect(ui_renderer, rx - COL_GAP / 2, top, 1, col_h, C.divider)
 	draw_rect(ui_renderer, cxw - COL_GAP / 2, top, 1, col_h, C.divider)
 
@@ -144,7 +144,7 @@ local function draw(ui_renderer, mx, my)
 			local sel = point_in(mx, my, fx, y, file_w, ROW_H) or (_focus == "file" and _file_sel == 1)
 			if sel then draw_rect(ui_renderer, fx, y, file_w, ROW_H, C.hover_bg)
 			elseif _show_favs then draw_rect(ui_renderer, fx, y, file_w, ROW_H, C.loaded_bg) end
-			draw_text(ui_renderer, "* Favourites", fx + 10, y + 11,
+			draw_text(ui_renderer, "* " .. mod:localize("favourites"), fx + 10, y + 11,
 				sel and C.hover or (_show_favs and C.loaded or C.fav), 22, file_w)
 			add_hit(fx, y, file_w, ROW_H, "favfile")
 		else
@@ -165,7 +165,7 @@ local function draw(ui_renderer, mx, my)
 	if _show_favs then
 		local favs = favorites.all()
 		_rule_scroll = clamp_scroll(_rule_scroll, #favs, rows)
-		if #favs == 0 then draw_text(ui_renderer, "No favourites yet", rx + 10, top + 6, C.dim, 20, rule_w) end
+		if #favs == 0 then draw_text(ui_renderer, mod:localize("no_favourites"), rx + 10, top + 6, C.dim, 20, rule_w) end
 		for r = 1, rows do
 			local fav = favs[_rule_scroll + r]
 			if not fav then break end
@@ -177,13 +177,13 @@ local function draw(ui_renderer, mx, my)
 				UIRenderer.script_draw_bitmap(ui_renderer, mat, Vector3(rx + 6, y + 4, LAYER + 1), Vector2(ROW_H - 8, ROW_H - 8), C.item)
 			end
 			draw_text(ui_renderer, display.rule_name(fav.rule), rx + ROW_H, y + 11, sel and C.hover or C.fav, 22, rule_w - ROW_H)
-			draw_text(ui_renderer, fav.line and ("#" .. fav.line) or "cycle", rx + rule_w - 110, y + 11, C.dim, 18, 100)
+			draw_text(ui_renderer, fav.line and ("#" .. fav.line) or mod:localize("cycle"), rx + rule_w - 110, y + 11, C.dim, 18, 100)
 			add_hit(rx, y, rule_w, ROW_H, "favrule", _rule_scroll + r)
 		end
 	else
 		local rules = state.rules
 		_rule_scroll = clamp_scroll(_rule_scroll, #rules, rows)
-		if #rules == 0 then draw_text(ui_renderer, "Click a file to load its lines", rx + 10, top + 6, C.dim, 20, rule_w) end
+		if #rules == 0 then draw_text(ui_renderer, mod:localize("click_file_hint"), rx + 10, top + 6, C.dim, 20, rule_w) end
 		for r = 1, rows do
 			local rule = rules[_rule_scroll + r]
 			if not rule then break end
@@ -222,8 +222,8 @@ local function draw(ui_renderer, mx, my)
 		draw_scrollbar(ui_renderer, cxw + icon_w + 5, top, col_h, total_rows, vis_rows, _icon_scroll, "icon")
 	elseif _open_rule then
 		local nv = vo_browser.variant_count(state.file, _open_rule)
-		local entries = { { label = "Default (cycle)", line = nil } }
-		for v = 1, nv do entries[#entries + 1] = { label = "Variant " .. v, line = v } end
+		local entries = { { label = mod:localize("variant_default"), line = nil } }
+		for v = 1, nv do entries[#entries + 1] = { label = mod:localize("variant_n", v), line = v } end
 		for r = 1, rows do
 			local e = entries[r]
 			if not e then break end
@@ -243,7 +243,7 @@ local function draw(ui_renderer, mx, my)
 	draw_scrollbar(ui_renderer, rx + rule_w + 5, top, col_h, _show_favs and #favorites.all() or #state.rules, rows, _rule_scroll, "rule")
 
 	draw_text(ui_renderer,
-		"LMB line: show variants   LMB variant: play   RMB: favourite   Favourites: assign icon   Wheel: scroll",
+		mod:localize("footer_help"),
 		fx, py + PANEL_H - FOOTER_H + 4, C.dim, 18, PANEL_W)
 end
 
@@ -384,6 +384,7 @@ end
 
 -- Initialise selection on first open; keep it on later opens.
 local function open()
+	icons.refresh()  -- pick up materials that weren't loaded at game boot
 	if _opened then return end
 	_opened = true
 	_focus = "file"; _kb_sel = 0

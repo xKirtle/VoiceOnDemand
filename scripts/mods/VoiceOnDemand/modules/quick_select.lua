@@ -6,6 +6,7 @@ local favorites  = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modul
 local ui         = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/ui")
 local browser    = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/browser")
 local wheel      = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/wheel")
+local icons      = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/icons")
 
 local UIRenderer = require("scripts/managers/ui/ui_renderer")
 
@@ -99,15 +100,15 @@ mod.keybind_quick_select = function(is_pressed)
 		if _mode == MODE_QUICK_SELECT then
 			close_overlay()
 		elseif #favorites.all() == 0 then
-			mod:echo("No favourites yet. Open Browse and right-click a line.")
+			mod:echo(mod:localize("no_favourites_hint"))
 		else
-			_mode = MODE_QUICK_SELECT; wheel.reset()
+			icons.refresh(); _mode = MODE_QUICK_SELECT; wheel.reset()
 		end
 		return
 	end
 	if is_pressed then
-		if #favorites.all() == 0 then mod:echo("No favourites yet. Open Browse and right-click a line."); return end
-		_mode = MODE_QUICK_SELECT; wheel.reset()
+		if #favorites.all() == 0 then mod:echo(mod:localize("no_favourites_hint")); return end
+		icons.refresh(); _mode = MODE_QUICK_SELECT; wheel.reset()
 	elseif _mode == MODE_QUICK_SELECT then
 		wheel.play_selected()
 		close_overlay()

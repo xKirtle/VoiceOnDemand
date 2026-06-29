@@ -544,25 +544,52 @@ local PATHS = {
 }
 
 local ICONS, _by_id, _by_legacy = {}, {}, {}
-for _, path in ipairs(PATHS) do
-  if Application.can_get_resource("material", path) then
-    -- Unique id = path minus the common prefix (avoids basename collisions
-    -- across roots, e.g. icons/.../attention vs hud/.../attention).
-    local id = path:gsub("^content/ui/materials/", "")
-    ICONS[#ICONS + 1] = { id = id, material = path }
-    _by_id[id] = path
-    -- Legacy alias: favourites saved before unique ids stored the basename.
-    -- Keep the first occurrence so old saves still resolve.
-    local base = path:match("[^/]+$")
-    if _by_legacy[base] == nil then _by_legacy[base] = path end
+
+-- Re-scan PATHS for currently-loadable materials. On a fresh game boot many UI
+-- material packages aren't registered yet, so can_get_resource returns false;
+-- call this again later (e.g. when opening the UI) to pick them up. Mutates the
+-- ICONS table in place so existing references (api.list) stay valid.
+local function rebuild()
+  for k in pairs(_by_id) do _by_id[k] = nil end
+  for k in pairs(_by_legacy) do _by_legacy[k] = nil end
+  for i = #ICONS, 1, -1 do ICONS[i] = nil end
+  for _, path in ipairs(PATHS) do
+    if Application.can_get_resource("material", path) then
+      -- Unique id = path minus the common prefix (avoids basename collisions
+      -- across roots, e.g. icons/.../attention vs hud/.../attention).
+      local id = path:gsub("^content/ui/materials/", "")
+      ICONS[#ICONS + 1] = { id = id, material = path }
+      _by_id[id] = path
+      -- Legacy alias: favourites saved before unique ids stored the basename.
+      -- Use last-wins to exactly match the previous (basename) id scheme, so
+      -- existing favourites keep resolving to the same icon they did before.
+      local base = path:match("[^/]+$")
+      _by_legacy[base] = path
+    end
   end
+  return #ICONS
 end
+
+rebuild()
 
 local function material(id)
   if not id then return nil end
   return _by_id[id] or _by_legacy[id]
 end
 
-local api = { list = ICONS, material = material }
+-- Lazily settle the cache. Material packages aren't loaded at game-boot
+-- mod-init, so the build above is usually empty/partial. refresh() (called when
+-- the UI opens) re-scans only until the count stops growing, then locks so
+-- later opens are no-ops instead of re-scanning every time.
+local _ready, _last_count = false, -1
+local function refresh()
+  if _ready then return #ICONS end
+  local n = rebuild()
+  if n > 0 and n == _last_count then _ready = true end
+  _last_count = n
+  return n
+end
+
+local api = { list = ICONS, material = material, refresh = refresh }
 mod._icons_module = api
 return api

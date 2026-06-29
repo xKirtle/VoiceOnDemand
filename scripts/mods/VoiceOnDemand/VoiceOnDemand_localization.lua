@@ -35,4 +35,50 @@ return {
 	keybind_quick_select = {
 		en = "Quick Select",
 	},
+
+	-- Browser overlay
+	browser_title = {
+		en = "VOICE ON DEMAND   %d files",
+	},
+	col_voice_files = {
+		en = "VOICE FILES",
+	},
+	col_voice_lines = {
+		en = "VOICE LINES",
+	},
+	col_icons = {
+		en = "ICONS",
+	},
+	col_variants = {
+		en = "VARIANTS",
+	},
+	favourites = {
+		en = "Favourites",
+	},
+	no_favourites = {
+		en = "No favourites yet",
+	},
+	cycle = {
+		en = "cycle",
+	},
+	click_file_hint = {
+		en = "Click a file to load its lines",
+	},
+	variant_default = {
+		en = "Default (cycle)",
+	},
+	variant_n = {
+		en = "Variant %d",
+	},
+	footer_help = {
+		en = "LMB: select   RMB: favourite   Wheel: scroll",
+	},
+
+	-- Quick-select wheel
+	no_favourites_hint = {
+		en = "No favourites yet. Open Browse and right-click a line.",
+	},
+	cancel = {
+		en = "cancel",
+	},
 }

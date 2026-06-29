@@ -170,7 +170,7 @@ local function draw(ui_renderer, mx, my)
 		end
 	end
 
-	local label = _selection > 0 and display.rule_name(favs[start_i + _selection].rule) or "cancel"
+	local label = _selection > 0 and display.rule_name(favs[start_i + _selection].rule) or mod:localize("cancel")
 	local box_w = hub * 0.78
 	local box_h = 120 * s
 	UIRenderer.script_draw_text(ui_renderer, label, 32 * s, FONT,
