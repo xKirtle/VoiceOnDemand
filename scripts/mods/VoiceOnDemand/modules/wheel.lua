@@ -42,7 +42,21 @@ end
 
 -- Paint a ring (annulus) from triangle segments. r_in = 0 yields a filled disc.
 local function ring(ui_renderer, cx, cy, r_out, r_in, layer, color, segs)
-	segs = segs or 96
+	-- 48 segments is sub-pixel-accurate at the wheel's radius; more just burns
+	-- draw_triangle calls every frame.
+	segs = segs or 48
+	if r_in <= 0 then
+		-- Filled disc: a triangle fan (one tri per segment) rather than the
+		-- two-per-segment annulus path (which would emit degenerate triangles).
+		local px, py = r_out, 0
+		for i = 1, segs do
+			local a = (i / segs) * 2 * math.pi
+			local nx, ny = math.cos(a) * r_out, math.sin(a) * r_out
+			tri(ui_renderer, cx, cy, 0, 0, px, py, nx, ny, layer, color)
+			px, py = nx, ny
+		end
+		return
+	end
 	for i = 0, segs - 1 do
 		local a0 = (i / segs) * 2 * math.pi
 		local a1 = ((i + 1) / segs) * 2 * math.pi
@@ -55,7 +69,9 @@ end
 
 -- Paint an annular sector (wedge) between r_in and r_out over an angular range.
 local function wedge(ui_renderer, cx, cy, r_out, r_in, a0, a1, layer, color, segs)
-	segs = segs or 16
+	-- Scale segments to the arc width (~48 per full circle, matching ring()),
+	-- so a wide slice (e.g. 2 options = half circle) stays smooth.
+	segs = segs or math.max(4, math.ceil(math.abs(a1 - a0) * 48 / (2 * math.pi)))
 	for i = 0, segs - 1 do
 		local t0 = a0 + (a1 - a0) * (i / segs)
 		local t1 = a0 + (a1 - a0) * ((i + 1) / segs)
@@ -138,7 +154,9 @@ local function draw(ui_renderer, mx, my)
 	local r_in  = 188 * s
 	local hub   = r_in * 2
 	-- Inner circle (hub): more transparent. Options band: a bit more opaque.
-	ring(ui_renderer, cx, cy, r_in, 0, LAYER, { 110, 6, 6, 10 })
+	-- The hub's edge is hidden under the inner ring + separators, so a coarse
+	-- fan (24) is plenty; the visible band keeps the default smoothness.
+	ring(ui_renderer, cx, cy, r_in, 0, LAYER, { 110, 6, 6, 10 }, 24)
 	ring(ui_renderer, cx, cy, r_out, r_in, LAYER, { 195, 6, 6, 10 })
 	-- Highlight the selected item's wedge (equal slice radiating from centre).
 	if _selection > 0 then
