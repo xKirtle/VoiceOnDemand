@@ -81,4 +81,15 @@ return {
 	cancel = {
 		en = "cancel",
 	},
+
+	-- Playback feedback
+	must_be_in_mission = {
+		en = "Must be in a mission",
+	},
+	no_audio_for = {
+		en = "No audio for '%s' (profile: %s)",
+	},
+	no_vo_data_for = {
+		en = "No VO data for '%s' (profile: %s)",
+	},
 }

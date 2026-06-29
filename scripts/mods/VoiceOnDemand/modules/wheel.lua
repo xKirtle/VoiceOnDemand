@@ -140,7 +140,7 @@ local function draw(ui_renderer, mx, my)
 	local dx, dy = mx - cx, my - cy
 	_selection = 0
 	if math.sqrt(dx * dx + dy * dy) > dead then
-		local ang = math.atan2(dy, dx)
+		local ang = math.atan(dy, dx)
 		local best, bestd
 		for i = 1, n do
 			local slot = (i - 1) / n * 2 * math.pi - math.pi / 2

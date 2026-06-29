@@ -50,9 +50,9 @@ end
 local function play_rule(file, rule, line)
 	local unit = get_player_unit()
 	local ext = get_dialogue_ext(unit)
-	if not ext then mod:echo("Must be in a mission"); return false end
+	if not ext then mod:echo(mod:localize("must_be_in_mission")); return false end
 	if not ensure_loaded(file, rule, ext) then
-		mod:echo(string.format("No audio for '%s' (profile: %s)", rule, ext._vo_profile_name))
+		mod:echo(mod:localize("no_audio_for", rule, ext._vo_profile_name))
 		return false
 	end
 	-- The engine refuses a new line while one is still playing; interrupt it so
@@ -80,13 +80,13 @@ end
 local function load_file(filename, filter)
 	local unit = get_player_unit()
 	local ext = get_dialogue_ext(unit)
-	if not ext then mod:echo("Must be in a mission"); return false end
+	if not ext then mod:echo(mod:localize("must_be_in_mission")); return false end
 
 	local voice_profile = ext._vo_profile_name
 	local path = DialogueSettings.default_voSources_path .. filename .. "_" .. voice_profile
 
 	if not Application.can_get_resource("lua", path) then
-		mod:echo(string.format("No VO data for '%s' (profile: %s)", filename, voice_profile))
+		mod:echo(mod:localize("no_vo_data_for", filename, voice_profile))
 		return false
 	end
 
