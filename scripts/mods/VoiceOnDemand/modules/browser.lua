@@ -182,7 +182,7 @@ local function draw(ui_renderer, mx, my)
 			if not ic then break end
 			local ix = cxw + ((vi - 1) % cols) * (cell + gap)
 			local iy = top + math.floor((vi - 1) / cols) * (cell + gap)
-			local on = picked and picked.icon == ic.id
+			local on = picked and (picked.icon == ic.id or picked.icon == ic.id:match("[^/]+$"))
 			draw_rect(ui_renderer, ix, iy, cell, cell, on and C.hover_bg or C.panel)
 			UIRenderer.script_draw_bitmap(ui_renderer, ic.material, Vector3(ix + 4, iy + 4, LAYER + 1), Vector2(cell - 8, cell - 8), C.item)
 			add_hit(ix, iy, cell, cell, "seticon", ic.id)
