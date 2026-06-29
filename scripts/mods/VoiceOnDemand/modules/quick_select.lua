@@ -69,8 +69,14 @@ mod:hook_safe("HudElementSmartTagging", "update",
 			browser.handle_input(mx, my, ui.view_service())
 		elseif _mode == MODE_QUICK_SELECT then
 			local svc = ui.view_service()
-			if svc and svc:get("left_pressed") and wheel.play_selected() then
-				close_overlay()
+			if svc then
+				local scroll = svc:get("scroll_axis")
+				if scroll and scroll[2] and scroll[2] ~= 0 then
+					wheel.scroll(scroll[2] > 0 and -1 or 1)
+				end
+				if svc:get("left_pressed") and wheel.play_selected() then
+					close_overlay()
+				end
 			end
 		end
 	end)
