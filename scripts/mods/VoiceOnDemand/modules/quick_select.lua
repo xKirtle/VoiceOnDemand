@@ -37,50 +37,68 @@ end
 
 -- ── HUD render hook ──────────────────────────────────────────────────────────
 
--- Reporting input usage makes Managers.ui:using_input() block gameplay look/move.
-mod:hook_safe("HudElementSmartTagging", "init", function(self)
-	self.using_input = function() return _mode ~= MODE_CLOSED end
-end)
+-- The overlay is rendered inside a HUD element's update. SmartTagging exists in
+-- missions/Psykhanium; the EmoteWheel exists in the Mourningstar hub. Hooking
+-- both means whichever one the current HUD has will host the overlay (only one
+-- is ever present at a time).
+local HOST_ELEMENTS = { "HudElementSmartTagging", "HudElementEmoteWheel" }
 
-mod:hook_safe("HudElementSmartTagging", "update",
-	function(self, dt, t, ui_renderer, render_settings, input_service)
-		if not self.using_input then
-			self.using_input = function() return _mode ~= MODE_CLOSED end
-		end
-		if _mode == MODE_CLOSED then pop_cursor(); return end
-		if not ui_renderer then return end
-		if not (RESOLUTION_LOOKUP and RESOLUTION_LOOKUP.width) then return end
-		ui.set_scale(mod:get("setting_ui_scale") or 1)
-		push_cursor()
+-- Make Managers.ui:using_input() report true while our overlay is open (blocks
+-- gameplay look/move), while preserving the element's own native reporting.
+local function hook_using_input(self)
+	local orig = self.using_input
+	self.using_input = function(s)
+		if _mode ~= MODE_CLOSED then return true end
+		return orig ~= nil and orig(s) or false
+	end
+end
 
-		local mx, my = ui.get_cursor()
+local _rendered_t = nil
 
-		UIRenderer.begin_pass(ui_renderer, self._ui_scenegraph, input_service, dt, render_settings)
-		pcall(function()
-			if _mode == MODE_BROWSE then
-				browser.draw(ui_renderer, mx or -1, my or -1)
-			elseif _mode == MODE_QUICK_SELECT then
-				wheel.draw(ui_renderer, mx or -1, my or -1)
-			end
-		end)
-		UIRenderer.end_pass(ui_renderer)
+local function render_overlay(self, dt, t, ui_renderer, render_settings, input_service)
+	if not self.using_input then hook_using_input(self) end
+	if _mode == MODE_CLOSED then pop_cursor(); return end
+	-- If both host elements happen to exist this frame, only render once.
+	if _rendered_t == t then return end
+	_rendered_t = t
+	if not ui_renderer then return end
+	if not (RESOLUTION_LOOKUP and RESOLUTION_LOOKUP.width) then return end
+	ui.set_scale(mod:get("setting_ui_scale") or 1)
+	push_cursor()
 
-		if not mx then return end
+	local mx, my = ui.get_cursor()
+
+	UIRenderer.begin_pass(ui_renderer, self._ui_scenegraph, input_service, dt, render_settings)
+	pcall(function()
 		if _mode == MODE_BROWSE then
-			browser.handle_input(mx, my, ui.view_service())
+			browser.draw(ui_renderer, mx or -1, my or -1)
 		elseif _mode == MODE_QUICK_SELECT then
-			local svc = ui.view_service()
-			if svc then
-				local scroll = svc:get("scroll_axis")
-				if scroll and scroll[2] and scroll[2] ~= 0 then
-					wheel.scroll(scroll[2] > 0 and -1 or 1)
-				end
-				if svc:get("left_pressed") and wheel.play_selected() then
-					close_overlay()
-				end
-			end
+			wheel.draw(ui_renderer, mx or -1, my or -1)
 		end
 	end)
+	UIRenderer.end_pass(ui_renderer)
+
+	if not mx then return end
+	if _mode == MODE_BROWSE then
+		browser.handle_input(mx, my, ui.view_service())
+	elseif _mode == MODE_QUICK_SELECT then
+		local svc = ui.view_service()
+		if svc then
+			local scroll = svc:get("scroll_axis")
+			if scroll and scroll[2] and scroll[2] ~= 0 then
+				wheel.scroll(scroll[2] > 0 and -1 or 1)
+			end
+			if svc:get("left_pressed") and wheel.play_selected() then
+				close_overlay()
+			end
+		end
+	end
+end
+
+for _, element in ipairs(HOST_ELEMENTS) do
+	mod:hook_safe(element, "init", hook_using_input)
+	mod:hook_safe(element, "update", render_overlay)
+end
 
 -- ── Keybind handlers ─────────────────────────────────────────────────────────
 

@@ -21,6 +21,16 @@ return {
 						tooltip = "setting_open_mode_desc",
 					},
 					{
+						setting_id = "setting_vo_scope",
+						type = "dropdown",
+						default_value = "local",
+						options = {
+							{ text = "setting_vo_scope_local",     value = "local" },
+							{ text = "setting_vo_scope_broadcast", value = "broadcast" },
+						},
+						tooltip = "setting_vo_scope_desc",
+					},
+					{
 						setting_id = "setting_ui_scale",
 						type = "numeric",
 						default_value = 1.0,

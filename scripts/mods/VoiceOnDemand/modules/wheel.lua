@@ -140,7 +140,10 @@ local function draw(ui_renderer, mx, my)
 	local dx, dy = mx - cx, my - cy
 	_selection = 0
 	if math.sqrt(dx * dx + dy * dy) > dead then
-		local ang = math.atan(dy, dx)
+		-- Darktide runs on LuaJIT (Lua 5.1): math.atan takes ONE arg, so the
+		-- two-arg form must be math.atan2(y, x). (The editor lints as 5.4 and
+		-- wrongly flags atan2 as deprecated.)
+		local ang = math.atan2(dy, dx)
 		local best, bestd
 		for i = 1, n do
 			local slot = (i - 1) / n * 2 * math.pi - math.pi / 2

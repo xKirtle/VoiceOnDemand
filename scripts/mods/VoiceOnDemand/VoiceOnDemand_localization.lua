@@ -29,6 +29,18 @@ return {
 	setting_open_mode_toggle = {
 		en = "Toggle",
 	},
+	setting_vo_scope = {
+		en = "VO playback scope",
+	},
+	setting_vo_scope_desc = {
+		en = "Local: only you hear the line. Broadcast: the on-demand com-wheel and smart-tag callouts (e.g. enemy/pickup pings) play for everyone via the networked dialogue system; all other lines still play locally only.",
+	},
+	setting_vo_scope_local = {
+		en = "Local (only you)",
+	},
+	setting_vo_scope_broadcast = {
+		en = "Broadcast (networked)",
+	},
 	keybind_browse_toggle = {
 		en = "Browse overlay",
 	},

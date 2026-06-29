@@ -4,6 +4,7 @@ if mod._vo_browser_module then return mod._vo_browser_module end
 
 local DialogueSettings = require("scripts/settings/dialogue/dialogue_settings")
 local Vo = require("scripts/utilities/vo")
+local broadcast_tags = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/broadcast_tags")
 
 local function build_file_list()
 	local files, seen = {}, {}
@@ -51,6 +52,18 @@ local function play_rule(file, rule, line)
 	local unit = get_player_unit()
 	local ext = get_dialogue_ext(unit)
 	if not ext then mod:echo(mod:localize("must_be_in_mission")); return false end
+
+	-- Broadcast: only the on-demand com-wheel / smart-tag lines carry a
+	-- networkable (concept, tag), so only those can be replicated to other
+	-- players. Anything else falls through to local playback below.
+	if mod:get("setting_vo_scope") == "broadcast" then
+		local tag = broadcast_tags[rule]
+		if tag then
+			pcall(Vo.on_demand_vo_event, unit, tag[1], tag[2])
+			return true
+		end
+	end
+
 	if not ensure_loaded(file, rule, ext) then
 		mod:echo(mod:localize("no_audio_for", rule, ext._vo_profile_name))
 		return false
