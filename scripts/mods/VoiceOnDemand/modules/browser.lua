@@ -7,6 +7,7 @@ local vo_browser = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modul
 local display    = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/display_names")
 local icons      = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/icons")
 local ui         = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/ui")
+local broadcast_tags = mod:io_dofile("VoiceOnDemand/scripts/mods/VoiceOnDemand/modules/broadcast_tags")
 
 local UIRenderer = require("scripts/managers/ui/ui_renderer")
 
@@ -97,6 +98,16 @@ local function hover_or_kb(mx, my, x, y, w, idx)
 	return point_in(mx, my, x, y, w, ROW_H) or idx == _kb_sel
 end
 
+-- Marks lines that can be broadcast to other players (in broadcast_tags).
+-- x_right is the right edge where the marker ends; sized to the current row.
+local BROADCAST_MAT = "content/ui/materials/icons/portraits/status_party"
+local function broadcast_marker(ui_renderer, rule, x_right, y)
+	if not broadcast_tags[rule] then return end
+	local sz = ROW_H * 0.7
+	UIRenderer.script_draw_bitmap(ui_renderer, BROADCAST_MAT,
+		Vector3(x_right - sz, y + (ROW_H - sz) / 2, LAYER + 2), Vector2(sz, sz), C.loaded)
+end
+
 local function panel_origin()
 	local sw, sh = RESOLUTION_LOOKUP.width, RESOLUTION_LOOKUP.height
 	return (sw - PANEL_W) / 2, (sh - PANEL_H) / 2
@@ -176,8 +187,9 @@ local function draw(ui_renderer, mx, my)
 			if mat then
 				UIRenderer.script_draw_bitmap(ui_renderer, mat, Vector3(rx + 6, y + 4, LAYER + 1), Vector2(ROW_H - 8, ROW_H - 8), C.item)
 			end
-			draw_text(ui_renderer, display.rule_name(fav.rule), rx + ROW_H, y + 11, sel and C.hover or C.fav, 22, rule_w - ROW_H)
-			draw_text(ui_renderer, fav.line and ("#" .. fav.line) or mod:localize("cycle"), rx + rule_w - 110, y + 11, C.dim, 18, 100)
+			draw_text(ui_renderer, display.rule_name(fav.rule), rx + ROW_H, y + 11, sel and C.hover or C.fav, 22, rule_w - ROW_H - 160)
+			draw_text(ui_renderer, fav.line and ("#" .. fav.line) or mod:localize("cycle"), rx + rule_w - 150, y + 11, C.dim, 18, 90)
+			broadcast_marker(ui_renderer, fav.rule, rx + rule_w - 6, y)
 			add_hit(rx, y, rule_w, ROW_H, "favrule", _rule_scroll + r)
 		end
 	else
@@ -194,7 +206,8 @@ local function draw(ui_renderer, mx, my)
 			if opened then draw_rect(ui_renderer, rx, y, rule_w, ROW_H, C.loaded_bg)
 			elseif hover then draw_rect(ui_renderer, rx, y, rule_w, ROW_H, C.hover_bg) end
 			draw_text(ui_renderer, (is_fav and "* " or "  ") .. display.rule_name(rule), rx + 10, y + 11,
-				opened and C.loaded or (hover and C.hover or (is_fav and C.fav or C.item)), 22, rule_w)
+				opened and C.loaded or (hover and C.hover or (is_fav and C.fav or C.item)), 22, rule_w - 44)
+			broadcast_marker(ui_renderer, rule, rx + rule_w - 6, y)
 			add_hit(rx, y, rule_w, ROW_H, "rule", rule)
 		end
 	end
@@ -242,9 +255,15 @@ local function draw(ui_renderer, mx, my)
 	draw_scrollbar(ui_renderer, fx + file_w + 5, top, col_h, #files, rows - 1, _file_scroll, "file")
 	draw_scrollbar(ui_renderer, rx + rule_w + 5, top, col_h, _show_favs and #favorites.all() or #state.rules, rows, _rule_scroll, "rule")
 
-	draw_text(ui_renderer,
-		mod:localize("footer_help"),
-		fx, py + PANEL_H - FOOTER_H + 4, C.dim, 18, PANEL_W)
+	local s   = ui.scale()
+	local fy  = py + PANEL_H - FOOTER_H + 4 * s
+	-- Legend: the broadcast marker icon next to its meaning, at the footer's right.
+	local isz = 26 * s
+	-- local lx  = fx + PANEL_W - 220 * s -> bottom righ corner
+	local lx  = fx + 360 * s
+	draw_text(ui_renderer, mod:localize("footer_help"), fx, fy, C.dim, 18, lx - fx - 10 * s)
+	UIRenderer.script_draw_bitmap(ui_renderer, BROADCAST_MAT, Vector3(lx, fy - 4 * s, LAYER + 2), Vector2(isz, isz), C.loaded)
+	draw_text(ui_renderer, mod:localize("broadcast_legend"), lx + isz + 1 * s, fy, C.dim, 18, 240 * s)
 end
 
 -- ── Input ────────────────────────────────────────────────────────────────────

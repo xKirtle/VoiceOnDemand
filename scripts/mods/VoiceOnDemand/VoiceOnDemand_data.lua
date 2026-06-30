@@ -23,7 +23,7 @@ return {
 					{
 						setting_id = "setting_vo_scope",
 						type = "dropdown",
-						default_value = "local",
+						default_value = "broadcast",
 						options = {
 							{ text = "setting_vo_scope_local",     value = "local" },
 							{ text = "setting_vo_scope_broadcast", value = "broadcast" },
@@ -33,7 +33,7 @@ return {
 					{
 						setting_id = "setting_ui_scale",
 						type = "numeric",
-						default_value = 1.0,
+						default_value = 1.25,
 						range = { 0.5, 2.0 },
 						decimals_number = 2,
 						tooltip = "setting_ui_scale_desc",

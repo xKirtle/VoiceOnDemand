@@ -85,6 +85,9 @@ return {
 	footer_help = {
 		en = "LMB: select   RMB: favourite   Wheel: scroll",
 	},
+	broadcast_legend = {
+		en = ": broadcastable",
+	},
 
 	-- Quick-select wheel
 	no_favourites_hint = {
